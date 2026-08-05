@@ -1,0 +1,26 @@
+# The lint-only caller. Task REPO-6 owns this file.
+#
+# This repository holds NO source of this project's own, so it runs no T0 suite
+# and it gets a lint-only caller rather than a `ci.yml`. It carries no build
+# matrix, no T0 context and no required check. It keeps whatever upstream
+# already configures.
+#
+# The four artifact-boundary lint steps run here like in any other repository.
+# That is the distinction the plan makes: the lint steps run in every
+# repository, and a T0 suite runs only where this plan writes a test.
+
+name: Lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lints:
+    uses: ./.github/workflows/track-repo.yml
+    with:
+      visibility: public
