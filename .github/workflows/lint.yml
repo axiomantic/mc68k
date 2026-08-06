@@ -9,12 +9,11 @@
 # That is the distinction the plan makes: the lint steps run in every
 # repository, and a T0 suite runs only where this plan writes a test.
 
-# Lint is manual, per the operator's request to make every CI run manual.
-# NOTE: this job takes ~12s; making it manual removes most of its value.
-
 name: Lint
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 permissions:
