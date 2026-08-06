@@ -45,3 +45,9 @@ source_group("source" FILES ${SOURCES})
 source_group("source\\Musashi" FILES ${SOURCES_MUSASHI})
 
 set_property(TARGET 68kEmu PROPERTY CXX_STANDARD 17)
+
+# Export the mc68k source directory as a PUBLIC include root so that consumers
+# can include mc68k headers by their bare name (e.g. #include "hdi08.h") in
+# addition to the qualified form (e.g. #include "mc68k/hdi08.h") that is
+# available through hardwareLib's parent include.
+target_include_directories(68kEmu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
