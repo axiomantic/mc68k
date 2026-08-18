@@ -91,7 +91,10 @@ namespace mc68k
 
 		void setRxEmptyCallback(const CallbackRxEmpty& _rxEmptyCallback)
 		{
-			m_rxEmptyCallback = _rxEmptyCallback;
+			if(_rxEmptyCallback)
+				m_rxEmptyCallback = _rxEmptyCallback;
+			else
+				m_rxEmptyCallback = [](bool) {};
 		}
 		void setWriteTxCallback(const CallbackWriteTx& _writeTxCallback);
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
