@@ -1,5 +1,4 @@
-# The repo track's reusable workflow. Task REPO-6 creates it; the repo track
-# fills it.
+# The repo track's reusable workflow.
 #
 # A per-track unit is a REUSABLE WORKFLOW and it contributes a JOB, not a step.
 # GitHub resolves a local reusable workflow only as `./.github/workflows/<file>`,
@@ -7,20 +6,9 @@
 # therefore declares exactly one job in its own file and adds its steps inside
 # that job.
 #
-# This file exists in ALL SEVEN repositories, because the four artifact-boundary
-# lint steps run in every one of them, and a step with no file to live in runs
-# nowhere.
-#
-# THE FOUR STEPS CLOSE FOUR DIFFERENT HOLES AND NONE SUBSTITUTES FOR ANOTHER.
-#   no-private-submodule    stops the private repository's URL and commit
-#                           hashes being published.
-#   no-clavia-payload       stops a Clavia byte reaching a public tree as a
-#                           committed file.
-#   no-clavia-upload        stops a Clavia byte LEAVING a public runner as a
-#                           build artifact. That route has no committed file in
-#                           it at all, so the payload step cannot see it.
-#   no-artifact-credential  stops a public repository holding the credential
-#                           that would let it fetch one.
+# Each artifact-boundary lint step below closes a different hole and none
+# substitutes for another: a step that reads committed files cannot see a byte
+# that leaves the runner only as a build artifact.
 
 name: track-repo
 
@@ -52,7 +40,7 @@ jobs:
         with:
           path: under-test
 
-      # The four lint scripts live in the tools repository, which is PUBLIC.
+      # The lint scripts live in the tools repository, which is PUBLIC.
       # Reading it needs no credential of any kind.
       - name: Check out the lint scripts
         uses: actions/checkout@v4
@@ -81,7 +69,7 @@ jobs:
       # allow-list. A `run: gh release download` against the private
       # repository, a `curl` against a private release asset and a `git clone`
       # of the private repository are none of `upload-artifact`, `cache` or
-      # `download-artifact`, and an action allow-list passes all three
+      # `download-artifact`, and an action allow-list passes each of them
       # untouched.
       #
       # The patterns below are assembled from split string literals ON PURPOSE.
@@ -100,9 +88,6 @@ jobs:
           pe="fixtures/proto""col/"
           pf="[._]dum""p\b"
           patterns="${pa}|${pb}|${pc}|${pd}|${pe}|${pf}"
-          # The allow-list is the set of jobs the plan places INSIDE the private
-          # repository. That is exactly one workflow file, and it is allow-listed
-          # only when the calling repository is the private one.
           allow=""
           if [ "${VISIBILITY}" = "private" ]; then
             allow="t1-t2.yml"
