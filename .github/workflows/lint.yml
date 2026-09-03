@@ -1,4 +1,4 @@
-# The lint-only caller. Task REPO-6 owns this file.
+# The lint-only caller.
 #
 # This repository holds NO source of this project's own, so it runs no T0 suite
 # and it gets a lint-only caller rather than a `ci.yml`. It carries no build
