@@ -308,3 +308,122 @@ jobs:
         run: |
           python3 -m nmg2_tools.credential_lint "${GITHUB_WORKSPACE}/under-test" \
             --visibility "${{ inputs.visibility }}"
+
+      # THE COMMENT-RUBRIC GATE. ONE CLAUSE FAILS THIS JOB; THE REST ARE
+      # INFORMATION.
+      #
+      # A per-clause measurement over every open pull-request head in this
+      # project produced 257408 raw matches and 4 adjudicated violations. The
+      # scanner exits 1 on ANY match, so a step that took that status as its
+      # verdict would fail every build in the project and would say nothing
+      # about any of them. This step therefore does NOT read the scanner's
+      # status as a verdict. It reads the per-clause breakdown and gates on the
+      # `roster` clause alone, which matched nothing anywhere in that
+      # measurement: gating it costs nothing today and it is red the moment a
+      # roster claim comes back. Every other clause is printed as advisory and
+      # cannot turn this job red.
+      #
+      # THE STATUS IS STILL CHECKED, FOR A DIFFERENT QUESTION. Exit 2 means one
+      # of the scanner's own controls failed and the counts it printed are
+      # unusable; any status the scanner does not define means it did not run as
+      # intended. Both are RED, because a broken scan and a clean scan otherwise
+      # print the same verdict, and that is the failure this whole file exists
+      # to remove. The counts are believed only after the status clears.
+      - name: comment-rubric
+        working-directory: lint-tools
+        run: |
+          set -uo pipefail
+
+          # `|| rc=$?` AND NOT A BARE ASSIGNMENT. This job's steps run under
+          # `bash -e`, where a bare `out=$(...)` whose command exits non-zero
+          # ends the step then and there, carrying the scanner's own status --
+          # so the step would go red on exit 1, which is the very thing it
+          # exists not to do, and the case statement below would never run.
+          rc=0
+          out=$(./scripts/check-comment-rubric.sh "${GITHUB_WORKSPACE}/under-test" 2>&1) || rc=$?
+          printf '%s\n' "$out"
+          echo
+          case "$rc" in
+            0|1)
+              ;;
+            2)
+              echo "FAILURE comment-rubric: the scanner's own controls failed (exit 2), so the"
+              echo "counts above are unusable. A scan that could not run is not a clean scan."
+              exit 1
+              ;;
+            *)
+              echo "FAILURE comment-rubric: the scanner exited ${rc}, a status it does not define."
+              echo "It defines 0 (no matches), 1 (matches to adjudicate) and 2 (control failed)."
+              exit 1
+              ;;
+          esac
+
+          # A clause line is a bare name and a number and nothing else. Matched
+          # source lines are indented four spaces and every summary line carries
+          # a colon, so neither can be read as a count.
+          counts=$(printf '%s\n' "$out" | awk '/^[a-z]+[ \t]+[0-9]+$/ { print $1, $2 }')
+          parsed=$(printf '%s\n' "$counts" | grep -c . || true)
+
+          # CONTROL 1: THE BREAKDOWN WAS PARSED, AND ALL OF IT WAS. The expected
+          # number is taken from the scanner's own controls line rather than
+          # kept here, so a clause added there cannot go unread here. If the
+          # output format moves, this parse yields nothing -- which reads
+          # exactly like a clean tree -- so it is checked before it is trusted.
+          expected=$(printf '%s\n' "$out" | sed -n 's/^controls: all \([0-9][0-9]*\) clause patterns fire.*/\1/p')
+          if [ -z "${expected}" ]; then
+            echo "CONTROL FAILED comment-rubric: the scanner printed no controls line, so how"
+            echo "many clauses it ran is unknown and the breakdown cannot be checked."
+            exit 1
+          fi
+          if [ "${parsed}" -ne "${expected}" ]; then
+            echo "CONTROL FAILED comment-rubric: parsed ${parsed} clause count(s) from output that"
+            echo "reports ${expected} clause(s). The gate would have judged a breakdown it never read."
+            exit 1
+          fi
+
+          # CONTROL 2: THE GATED CLAUSE IS ONE OF THE CLAUSES THAT WAS PARSED. A
+          # renamed clause would otherwise leave this step green for ever while
+          # gating nothing at all.
+          roster=$(printf '%s\n' "$counts" | awk '$1 == "roster" { print $2 }')
+          if [ -z "${roster}" ]; then
+            echo "CONTROL FAILED comment-rubric: no 'roster' count in the breakdown, so the one"
+            echo "clause this step gates was never measured."
+            exit 1
+          fi
+
+          # CONTROL 3: THE SCAN HAD A POPULATION. A checkout that did not happen,
+          # a path that does not exist and a tree the scanner cannot descend all
+          # produce zero matches in every clause, which is byte for byte what a
+          # clean tree produces. This turns that case red instead. Found while
+          # testing this step: a `under-test` that was a symlink scanned nothing
+          # and reported every clause at zero.
+          population=$(printf '%s\n' "$out" | sed -n 's/^population: \([0-9][0-9]*\) files .*/\1/p')
+          if [ -z "${population}" ]; then
+            echo "CONTROL FAILED comment-rubric: the scanner printed no population line, so what"
+            echo "it scanned is unknown and zero matches cannot be told from an empty scan."
+            exit 1
+          fi
+          if [ "${population}" -eq 0 ]; then
+            echo "CONTROL FAILED comment-rubric: the scanner found 0 files under"
+            echo "${GITHUB_WORKSPACE}/under-test, so it scanned nothing. An empty scan and a"
+            echo "clean scan print the same breakdown; this is the empty one."
+            exit 1
+          fi
+          echo "population: ${population} file(s) scanned under ${GITHUB_WORKSPACE}/under-test"
+          echo "ADVISORY -- raw matches, not violations, and not a verdict. These cannot"
+          echo "fail this job. Read them; do not act on the number alone."
+          printf '%s\n' "$counts" | awk '$1 != "roster" { printf "  %-10s %s raw match(es)\n", $1, $2 }'
+          echo "GATED -- this clause fails the job:"
+          printf '  %-10s %s raw match(es)\n' roster "${roster}"
+
+          if [ "${roster}" -ne 0 ]; then
+            echo
+            echo "FAILURE comment-rubric: the 'roster' clause matched ${roster} line(s)."
+            echo "That clause matched nothing anywhere in this project on the day it was"
+            echo "gated, so every line it reports here is new. The matched lines are printed"
+            echo "under 'roster' in the scanner output above."
+            exit 1
+          fi
+
+          echo
+          echo "OK: the gated 'roster' clause matched nothing."
