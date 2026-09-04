@@ -334,6 +334,39 @@ jobs:
         run: |
           set -uo pipefail
 
+          # THE SCANNER IS A zsh SCRIPT AND THE RUNNER IMAGE HAS NO zsh.
+          # Observed on the first run of this step: exit 127, `cannot execute:
+          # required file not found`. On a file that IS present and IS
+          # executable, that message names a missing INTERPRETER, not a missing
+          # script. The runner image ships bash, dash and sh, and no zsh.
+          #
+          # The alternative is porting the scanner to bash. It is built on
+          # `emulate -L zsh`, `setopt`, `typeset -A` and zsh word splitting, so
+          # that is a real port of an instrument shared by every repository, and
+          # a half-port that runs under bash while behaving differently is worse
+          # than one that will not start. That port is not attempted here.
+          #
+          # The install is CONDITIONAL, so a runner image that later ships zsh
+          # pays no network cost, and its result is CHECKED rather than trusted:
+          # a package manager can report success and still leave nothing
+          # runnable, and the next thing that happens would be a bare 127 again.
+          if ! command -v zsh >/dev/null 2>&1; then
+            echo "zsh is not on this runner; installing it."
+            if ! sudo apt-get update -qq || ! sudo apt-get install -y -qq zsh; then
+              echo "FAILURE comment-rubric: could not install zsh, which the scanner needs to"
+              echo "start. This step cannot report anything about the tree without it."
+              exit 1
+            fi
+          fi
+
+          # CONTROL 0: THE INTERPRETER RUNS.
+          if ! zsh -c 'exit 0' >/dev/null 2>&1; then
+            echo "CONTROL FAILED comment-rubric: zsh is still not runnable, so the scanner"
+            echo "cannot start. A step that cannot run its scanner has measured nothing."
+            exit 1
+          fi
+          echo "interpreter: $(command -v zsh) -- $(zsh --version)"
+
           # `|| rc=$?` AND NOT A BARE ASSIGNMENT. This job's steps run under
           # `bash -e`, where a bare `out=$(...)` whose command exits non-zero
           # ends the step then and there, carrying the scanner's own status --
