@@ -1,3 +1,4 @@
+// CONTROL CONFLICT SIDE B
 #include "qsm.h"
 
 #include "logging.h"
