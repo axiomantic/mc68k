@@ -88,7 +88,15 @@ branch before you report a file as absent.
 
 ## This repository
 
-**Licence: GPL-3.0 fork. This repository is lint only.**
+**Licence: none. This repository carries no licence of its own, and neither it
+nor its upstream `dsp56300/mc68k` declares one. Do not assume GPL-3.0 and do not
+assume permissive.** The vendored `Musashi/` tree carries its own MIT-style grant
+(Karl Stenerud) and is not this project's code. Because the licence is unsettled,
+nothing from this repository may be assumed safe to move into `mcf5307` or
+`nmg2-tools`, which are MIT and clean-room. Settle the licence before you move
+any code out.
+
+**This repository is lint only.**
 
 This project consumes `mc68k::Hdi08` and nothing else. Most of the tree is
 vendored Musashi. Do not lint, format, or refactor it.
