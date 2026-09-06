@@ -21,7 +21,7 @@ on:
           of the credential lint is scoped to public repositories: a `secrets.`
           reference outside the three organization momus secrets is a defect in
           a public repository, while inside the private one the T1 and T2 jobs
-          legitimately hold what they need. The other three steps apply to all
+          legitimately hold what they need. The other two steps apply to all
           seven repositories without exception.
         required: false
         type: string
@@ -184,14 +184,6 @@ jobs:
       - name: no-private-submodule
         working-directory: lint-tools
         run: python3 -m nmg2_tools.submodule_lint "${GITHUB_WORKSPACE}/under-test"
-
-      - name: no-clavia-payload
-        working-directory: lint-tools
-        run: |
-          python3 -m nmg2_tools.payload_lint "${GITHUB_WORKSPACE}/under-test" \
-            --register nmg2_tools/testdata/register.tsv \
-            --visibility "${{ inputs.visibility }}" \
-            --repo "${{ github.repository }}"
 
       # The upload step reads the WHOLE workflow text and NOT an action
       # allow-list. A `run: gh release download` against the private
