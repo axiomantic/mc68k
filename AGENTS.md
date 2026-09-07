@@ -146,6 +146,25 @@ push either fails or writes the wrong ref.
 
 Work in a clone you created yourself. Never delete a path you did not create.
 
+**Containment by ancestry and containment by content are different questions.**
+`git merge-base --is-ancestor` answers "is this commit in that history". It does
+NOT answer "does that branch already carry this work". Where a stack was rebuilt
+rather than merged -- any rebase, cherry-pick or squash -- ancestry says NOT
+CONTAINED for work that is fully present. It is wrong in the dangerous direction
+too: a fix can sit on three branches as three distinct commits and ancestry finds
+none of them from a fourth.
+
+Say which question you are answering. To decide whether closing something loses
+work, compare CONTENT -- hash the files, or diff the trees and count what is
+absent from the survivor. Reserve ancestry for what it is exact about: whether a
+fast-forward exists.
+
+Observed twice in one day, in opposite directions. A rule demanding an ancestry
+proof before any close would have blocked every legitimate close in a repository
+whose branches were rebuilt; applying it loosely instead would have deleted a
+branch holding seven files that existed nowhere else. Elsewhere the same test
+returned false for all three copies of a bug fix that blob identity found at once.
+
 ## Searching
 
 `git grep` does not see untracked files. An empty result and an unsearched file
