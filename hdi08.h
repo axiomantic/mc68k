@@ -47,6 +47,7 @@ namespace mc68k
 		using CallbackWriteIrq = std::function<void(uint8_t)>;
 		using CallbackReadIsr = std::function<uint8_t(uint8_t)>;
 		using CallbackInitHdi08 = std::function<void()>;
+		using CallbackWriteIcr = std::function<void(uint8_t)>;
 
 		Hdi08();
 
@@ -91,12 +92,16 @@ namespace mc68k
 
 		void setRxEmptyCallback(const CallbackRxEmpty& _rxEmptyCallback)
 		{
-			m_rxEmptyCallback = _rxEmptyCallback;
+			if(_rxEmptyCallback)
+				m_rxEmptyCallback = _rxEmptyCallback;
+			else
+				m_rxEmptyCallback = [](bool) {};
 		}
 		void setWriteTxCallback(const CallbackWriteTx& _writeTxCallback);
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
 		void setReadIsrCallback(const CallbackReadIsr& _readIsrCallback);
 		void setInitHdi08Callback(const CallbackInitHdi08& _callback);
+		void setWriteIcrCallback(const CallbackWriteIcr& _writeIcrCallback);
 
 	private:
 		enum class WordFlags
@@ -138,5 +143,6 @@ namespace mc68k
 		CallbackWriteIrq m_writeIrqCallback;
 		CallbackReadIsr m_readIsrCallback;
 		CallbackInitHdi08 m_initHdi08Callback;
+		CallbackWriteIcr m_writeIcrCallback;
 	};
 }

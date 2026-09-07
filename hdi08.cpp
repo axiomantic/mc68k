@@ -10,10 +10,12 @@ namespace mc68k
 
 	Hdi08::Hdi08()
 	{
+		setRxEmptyCallback(nullptr);
 		setWriteTxCallback(nullptr);
 		setWriteIrqCallback(nullptr);
 		setReadIsrCallback(nullptr);
 		setInitHdi08Callback(nullptr);
+		setWriteIcrCallback(nullptr);
 
 		write8(PeriphAddress::HdiIVR, 0xf);
 	}
@@ -65,6 +67,7 @@ namespace mc68k
 			return;
 		case PeriphAddress::HdiICR:
 //			MCLOG("HDI08 ICR set to " << MCHEXN(_val,2));
+			m_writeIcrCallback(_val);
 			if(_val & Init)
 			{
 				MCLOG("HDI08 Initialization, HREQ=" << (_val & Rreq) << ", TREQ=" << (_val & Treq));
@@ -216,6 +219,14 @@ namespace mc68k
 			m_initHdi08Callback = _callback;
 		else
 			m_initHdi08Callback = [] {};
+	}
+
+	void Hdi08::setWriteIcrCallback(const CallbackWriteIcr& _writeIcrCallback)
+	{
+		if(_writeIcrCallback)
+			m_writeIcrCallback = _writeIcrCallback;
+		else
+			m_writeIcrCallback = [](uint8_t) {};
 	}
 
 	void Hdi08::writeTX(WordFlags _index, const uint8_t _val)
