@@ -10,6 +10,7 @@ namespace mc68k
 
 	Hdi08::Hdi08()
 	{
+		setRxEmptyCallback(nullptr);
 		setWriteTxCallback(nullptr);
 		setWriteIrqCallback(nullptr);
 		setReadIsrCallback(nullptr);
